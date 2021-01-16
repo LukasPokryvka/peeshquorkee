@@ -1,123 +1,136 @@
 <template>
 	<section v-if="getIsUserLoggedIn" class="chat">
-		<div class="chat-header">
-			<h2>🤣 Četík 🤣</h2>
-		</div>
+		<ChatHeader />
 		<div class="chat-dialog">
-			<a
-				class="load-prev-msg"
-				title="Load previous messages"
-				@click="loadPrevChat()"
-				>🠕</a
-			>
-			<a v-if="!state.connected" class="connect-to-chat" @click="connect()"
-				>Connect to chat</a
-			>
-
-			<ul v-else id="chat-body">
-				<li
+			<ChatLoadPreviousMessage @load-prev-chat="loadPrevChat()" />
+			<ChatConnectButton v-if="!state.connected" @connect-to-chat="connect()" />
+			<transition-group v-else name="messages" tag="ul" id="chat-body">
+				<ChatMessage
 					v-for="message in state.received_messages"
 					:key="message"
-					:class="
-						message.email === state.user.email ? 'origin-user' : 'other-user'
-					"
-				>
-					<div>
-						<small>{{ timeOfChat(message.nickname, message.timestamp) }}</small>
-					</div>
-					<div>
-						<img :src="message.avatar" alt="" />
-						<p v-html="message.content"></p>
-					</div>
-				</li>
-			</ul>
+					:message="message"
+					:userEmail="state.user.email"
+				/>
+			</transition-group>
 		</div>
-		<div class="chat-input">
-			<input
-				v-model.trim="state.send_message"
-				type="text"
-				@keyup.enter="send()"
-			/>
-		</div>
+		<ChatInput @send-message="send($event)" />
 	</section>
 </template>
 
 <script>
+// components
+import ChatMessage from './ChatMessage'
+import ChatLoadPreviousMessage from './ChatLoadPreviousMessage'
+import ChatHeader from './ChatHeader'
+import ChatInput from './ChatInput'
+import ChatConnectButton from './ChatConnectButton'
+
+// vue stuff
+import { computed, onMounted, reactive, watchEffect } from 'vue'
+import { useStore } from 'vuex'
+
+// custom functions
+import {
+	formatTimestamp,
+	getCurrentTimestamp
+} from '../../utilities/timeUtilities'
+import updateScroll from '../../utilities/updateScroll'
+
+// dependencies
 import SockJS from 'sockjs-client'
 import Stomp from 'webstomp-client'
 import axios from 'axios'
 import twitchEmoji from 'twitch-emoji'
-import {
-	formatTimestamp,
-	getCurrentTimestamp,
-	timeOfChat
-} from '../../utilities/timeUtilities'
-import updateScroll from '../../utilities/updateScroll'
 import { Base64 } from 'js-base64'
-import { computed, onMounted, reactive, watchEffect } from 'vue'
-import { useStore } from 'vuex'
+
+// message sound
+const notification = new Audio(require('../../sounds/notification.mp3'))
 
 export default {
+	components: {
+		ChatMessage,
+		ChatHeader,
+		ChatInput,
+		ChatLoadPreviousMessage,
+		ChatConnectButton
+	},
 	setup() {
 		const store = useStore()
 		const state = reactive({
 			received_messages: [],
-			send_message: null,
 			connected: false,
 			user: getUser,
-			oldestTimestamp: null
+			oldestTimestamp: null,
+			firstMessage: true
 		})
 
 		let stompClient = null
 
+		/**
+		 * * Oldest timestamp set to current time, if first
+		 * * thing after connection is load previous messages
+		 */
 		onMounted(() => {
 			state.oldestTimestamp = getCurrentTimestamp()
 		})
 
+		/**
+		 * * Create connection after clicking on 'Connect to chat'
+		 * * Provide connectCallback and connectError
+		 */
 		function connect() {
 			const socket = new SockJS('http://192.168.100.25:42069/chatapp')
 			stompClient = Stomp.over(socket)
 			stompClient.connect({}, connectCallback, connectErrot)
 		}
 
+		/**
+		 * * Connection to chat callback, creating subscribe on
+		 * * the server. On received message, parse it and create
+		 * * message object, which is pushed to the state.received_messages.
+		 * * Checking for firstMessage, which should provide header after
+		 * * loading old messages. Then set oldest timestamp and scroll
+		 * * to the bottom. Play sound if received message is from another person
+		 */
 		function connectCallback(frame) {
 			state.connected = true
 			console.log(frame)
 			stompClient.subscribe('/topic/chat', tick => {
+				const msg = JSON.parse(tick.body)
 				console.log(tick)
-				const content = twitchEmoji.parse(
-					Base64.decode(JSON.parse(tick.body).content),
-					{ emojiSize: 'small' }
-				)
-
-				console.log('body:      -------->', tick.body.slice(0, 4))
-				// const email = JSON.parse(tick.body).email
-				// const timestamp = formatTimestamp(JSON.parse(tick.body).timestamp)
-				// const avatar = JSON.parse(tick.body).avatar
-				// const nickname = JSON.parse(tick.body).nickname
-
-				const email = JSON.parse(tick.body).email
-				const timestamp = formatTimestamp(JSON.parse(tick.body).timestamp)
-				const avatar = JSON.parse(tick.body).avatar
-				const nickname = JSON.parse(tick.body).nickname
 
 				state.received_messages.push({
-					content,
-					email,
-					timestamp,
-					avatar,
-					nickname
+					content: twitchEmoji.parse(Base64.decode(msg.content)),
+					email: msg.email,
+					timestamp: formatTimestamp(msg.timestamp),
+					avatar: msg.avatar,
+					nickname: msg.nickname,
+					displayHeader: false,
+					firstMessage: state.firstMessage ? true : false
 				})
+
+				state.firstMessage = false
 				state.oldestTimestamp = state.received_messages[0].timestamp
+				formatHeaders()
 				updateScroll()
+
+				if (msg.email !== state.user.email) {
+					notification.play()
+				}
 			})
 		}
 
+		/**
+		 * * Connection error callback
+		 */
 		function connectErrot(error) {
 			console.log(error)
 			state.connected = false
 		}
 
+		/**
+		 * * Disconnect from the server
+		 */
 		function disconnect() {
 			if (stompClient) {
 				stompClient.disconnect()
@@ -125,19 +138,26 @@ export default {
 			state.connected = false
 		}
 
-		function send() {
+		/**
+		 * * Send new message to the server
+		 */
+		function send(message) {
 			if (stompClient && stompClient.connected) {
 				const msg = {
-					message: Base64.encode(state.send_message),
+					message: Base64.encode(message),
 					nickname: state.user.nickname,
 					email: state.user.email
 				}
 				console.log(JSON.stringify(msg))
 				stompClient.send('/app/incomingMessage', JSON.stringify(msg), {})
-				state.send_message = null
 			}
 		}
 
+		/**
+		 * * Load 10 previous messages from oldest timemstamp
+		 * * which is time of logging into chat. Then set new
+		 * * oldest timestamp and format chat
+		 */
 		function loadPrevChat() {
 			if (!state.connected) connect()
 
@@ -148,25 +168,47 @@ export default {
 				.then(res => {
 					const data = res.data
 					data.forEach(msg => {
-						const { message: content, email, timestamp, avatar, nickname } = msg
-
 						state.received_messages.unshift({
-							content: twitchEmoji.parse(Base64.decode(content), {
+							content: twitchEmoji.parse(Base64.decode(msg.message), {
 								emojiSize: 'small'
 							}),
-							email,
-							timestamp: formatTimestamp(timestamp),
-							avatar,
-							nickname
+							email: msg.email,
+							timestamp: formatTimestamp(msg.timestamp),
+							avatar: msg.avatar,
+							nickname: msg.nickname,
+							displayHeader: false,
+							firstMessage: false
 						})
 					})
 					state.oldestTimestamp = state.received_messages[0].timestamp
+					formatHeaders()
 				})
 				.catch(e => {
 					console.log('error: ', e)
 				})
 		}
 
+		/**
+		 * * Run through every message in state.received_messages
+		 * * and set rule, if nick, time and avatar should be displayed
+		 */
+		function formatHeaders() {
+			state.received_messages.forEach((msg, index) => {
+				if (index === 0) {
+					state.received_messages[index].displayHeader = true
+				} else if (msg.email !== state.received_messages[index - 1].email) {
+					state.received_messages[index].displayHeader = true
+				} else {
+					if (!state.received_messages[index].firstMessage) {
+						state.received_messages[index].displayHeader = false
+					}
+				}
+			})
+		}
+
+		/**
+		 * * COMPUTED
+		 */
 		const getUser = computed(() => store.getters.getUser)
 		const getIsUserLoggedIn = computed(() => store.getters.getIsLoggedIn)
 		watchEffect(() => {
@@ -184,7 +226,7 @@ export default {
 			store,
 			getUser,
 			getIsUserLoggedIn,
-			timeOfChat
+			formatHeaders
 		}
 	}
 }
@@ -205,59 +247,12 @@ ul::-webkit-scrollbar-thumb {
 	border-radius: 15px;
 	box-shadow: 3px 3px 5px #555;
 
-	.chat-header {
-		height: 10%;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		background-color: #d65db1;
-		border-top-left-radius: 15px;
-		border-top-right-radius: 15px;
-		color: white;
-
-		h2 {
-			text-align: center;
-			margin: 0;
-		}
-	}
-
 	.chat-dialog {
 		height: 80%;
 		display: flex;
 		justify-content: center;
 		align-items: center;
 		position: relative;
-
-		a {
-			cursor: pointer;
-		}
-
-		.load-prev-msg {
-			position: absolute;
-			top: 0;
-			left: 50%;
-			opacity: 0.5;
-			font-size: 1.7rem;
-			transition: all 0.3s ease;
-		}
-
-		.load-prev-msg:hover {
-			transform: scale(1.8);
-			opacity: 1;
-		}
-
-		.connect-to-chat {
-			padding: 0.7rem 1.5rem;
-			background-color: #845ec2;
-			color: white;
-			border-radius: 15px;
-			cursor: pointer;
-			transition: all 0.3s ease;
-		}
-
-		.connect-to-chat:hover {
-			background-color: #9e70e8;
-		}
 
 		ul {
 			padding: 0 0.7rem;
@@ -266,83 +261,19 @@ ul::-webkit-scrollbar-thumb {
 			height: 100%;
 			overflow: scroll;
 			overflow-x: hidden;
-
-			li {
-				display: flex;
-				flex-flow: column;
-				list-style: none;
-				margin: 3px 0;
-
-				p {
-					max-width: 70%;
-					color: white;
-					margin: 0;
-					padding: 0.3rem 0.7rem;
-					border-radius: 15px;
-					text-align: left;
-				}
-
-				div {
-					display: flex;
-					align-items: center;
-					img {
-						object-fit: cover;
-						border-radius: 50%;
-						height: 25px;
-						width: 25px;
-					}
-					small {
-						margin-bottom: 3px;
-					}
-				}
-			}
-
-			.origin-user {
-				text-align: right;
-
-				div {
-					flex-direction: row-reverse;
-				}
-
-				p {
-					background-color: #845ec2;
-					word-break: break-word;
-				}
-
-				img {
-					margin-left: 5px;
-				}
-			}
-
-			.other-user {
-				justify-content: flex-start;
-
-				p {
-					background-color: #ff6f91;
-				}
-
-				img {
-					margin-right: 5px;
-				}
-			}
 		}
 	}
+}
 
-	.chat-input {
-		height: 10%;
-		display: flex;
-		align-items: flex-end;
-		padding: 0 0.7rem 0.7rem 0.7rem;
-		input {
-			border: none;
-			padding: 0.5rem;
-			border-radius: 15px;
-			background-color: rgba(255, 150, 113, 0.35);
-			width: 100%;
-		}
-		input:focus {
-			outline: none;
-		}
-	}
+// animations
+.messages-enter-active,
+.messages-leave-active {
+	transition: all 0.15s;
+}
+
+.messages-enter-from,
+.messages-leave-to {
+	opacity: 0;
+	transform: scale(0.75);
 }
 </style>

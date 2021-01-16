@@ -52,6 +52,9 @@ export default {
 			store.dispatch('logout')
 		}
 
+		/**
+		 * * COMPUTED
+		 */
 		const getIsUserLoggedIn = computed(() => store.getters.getIsLoggedIn)
 		const getUser = computed(() => store.getters.getUser)
 
@@ -175,16 +178,16 @@ header {
 	}
 
 	.button-login {
-		background-color: #3bb17a;
+		background-color: #d65db1;
 	}
 	.button-login:hover {
-		background-color: #47d794;
+		background-color: #fc6dd0;
 	}
 	.button-register {
-		background-color: #176597;
+		background-color: #845ec2;
 	}
 	.button-register:hover {
-		background-color: #1c7ebd;
+		background-color: #9e70e8;
 	}
 }
 </style>

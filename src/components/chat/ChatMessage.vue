@@ -7,7 +7,7 @@
 			<small v-if="message.displayHeader" class="relative"
 				>{{ timeOfChat(message.nickname, message.timestamp) }}
 				<transition name="roll">
-					<ChatPopup v-if="avatarHover" class="origin-user-popup" />
+					<ChatPopup v-if="avatarHover" />
 				</transition>
 			</small>
 		</div>

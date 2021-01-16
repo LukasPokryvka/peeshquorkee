@@ -26,7 +26,7 @@ export default {
 	z-index: 20;
 	height: 100%;
 	width: 100%;
-	background-color: #ddd;
+	background-color: #000;
 	opacity: 0.5;
 }
 

@@ -1,5 +1,6 @@
 * {
 	box-sizing: border-box;
+	outline: none;
 }
 
 html,
@@ -14,4 +15,6 @@ button {
 
 .twitch-emoji {
 	vertical-align: middle;
+	width: 20px;
+	height: 20px;
 }
