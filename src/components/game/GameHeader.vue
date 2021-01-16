@@ -76,10 +76,17 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+@import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
 .game-header {
 	display: flex;
-	justify-content: space-around;
 	align-items: center;
 	height: 10%;
+
+	h2 {
+		font-family: 'VT323', monospace;
+		flex-basis: 33.333%;
+		text-align: center;
+		font-size: 2rem;
+	}
 }
 </style>

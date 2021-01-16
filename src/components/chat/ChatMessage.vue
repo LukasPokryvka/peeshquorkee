@@ -6,8 +6,15 @@
 		<div>
 			<small v-if="message.displayHeader" class="relative"
 				>{{ timeOfChat(message.nickname, message.timestamp) }}
-				<transition name="roll">
-					<ChatPopup v-if="avatarHover" />
+				<transition
+					:name="message.email === userEmail ? 'roll-left' : 'roll-right'"
+				>
+					<ChatPopup
+						v-if="avatarHover"
+						:class="
+							message.email === userEmail ? 'roll-from-right' : 'roll-from-left'
+						"
+					/>
 				</transition>
 			</small>
 		</div>
@@ -75,7 +82,8 @@ li {
 			border-radius: 50%;
 			height: 25px;
 			width: 25px;
-			z-index: 10;
+			z-index: 20;
+			cursor: pointer;
 		}
 		small {
 			margin-bottom: 3px;
@@ -122,14 +130,33 @@ li {
 	}
 }
 
-.roll-enter-active,
-.roll-leave-active {
+.roll-from-right {
+	right: 30px;
+}
+
+.roll-from-left {
+	left: 30px;
+}
+
+.roll-left-enter-active,
+.roll-left-leave-active {
 	transition: all 0.1s ease-in;
 }
 
-.roll-enter-from,
-.roll-leave-to {
+.roll-left-enter-from,
+.roll-left-leave-to {
 	opacity: 0;
 	transform: translateX(25%);
+}
+
+.roll-right-enter-active,
+.roll-right-leave-active {
+	transition: all 0.1s ease-in;
+}
+
+.roll-right-enter-from,
+.roll-right-leave-to {
+	opacity: 0;
+	transform: translateX(-25%);
 }
 </style>

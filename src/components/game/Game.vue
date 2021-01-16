@@ -3,13 +3,10 @@
 		<GameHeader :user="user" />
 		<GameConnect v-if="!connectedToGame" @connect-to-game="connectToGame" />
 		<GameBoard :gameBoard="gameBoard" @player-move="send($event)" />
-		<button
+		<GameDisconnect
 			v-if="connectedToGame"
-			@click="disconnectFromGame"
-			class="disconnect"
-		>
-			X
-		</button>
+			@disconnect-from-game="disconnectFromGame"
+		/>
 	</section>
 </template>
 
@@ -21,12 +18,14 @@ import { useStore } from 'vuex'
 import GameBoard from './GameBoard'
 import GameConnect from './GameConnect'
 import GameHeader from './GameHeader'
+import GameDisconnect from './GameDisconnect'
 
 export default {
 	components: {
 		GameBoard,
 		GameConnect,
-		GameHeader
+		GameHeader,
+		GameDisconnect
 	},
 	setup() {
 		const store = useStore()
@@ -179,22 +178,5 @@ export default {
 	width: 500px;
 	height: 550px;
 	border-radius: 15px;
-
-	.disconnect {
-		position: absolute;
-		top: -10px;
-		right: -10px;
-		border: none;
-		background-color: #fe4d4d;
-		color: white;
-		border-radius: 15px;
-		padding: 0.28rem 0.56rem 0.25rem 0.56rem;
-		transition: all 0.3s ease;
-	}
-
-	.disconnect:hover {
-		background-color: #ff644d;
-		transform: scale(1.1);
-	}
 }
 </style>
