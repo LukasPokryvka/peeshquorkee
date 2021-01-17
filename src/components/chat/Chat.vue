@@ -79,7 +79,7 @@ export default {
 		 * * Provide connectCallback and connectError
 		 */
 		function connect() {
-			const socket = new SockJS('http://192.168.100.62:42069/chat')
+			const socket = new SockJS('http://192.168.100.24:42069/chat')
 			stompClient = Stomp.over(socket)
 			stompClient.connect({}, connectCallback, connectErrot)
 		}
