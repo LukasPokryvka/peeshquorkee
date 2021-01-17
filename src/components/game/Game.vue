@@ -1,5 +1,9 @@
 <template>
-	<section class="game" :class="{ 'game-background': connectedToGame }">
+	<section
+		v-if="getIsUserLoggedIn"
+		class="game"
+		:class="{ 'game-background': connectedToGame }"
+	>
 		<GameHeader :user="user" />
 		<GameConnect v-if="!connectedToGame" @connect-to-game="connectToGame" />
 		<GameBoard :gameBoard="gameBoard" @player-move="send($event)" />
@@ -11,10 +15,15 @@
 </template>
 
 <script>
+// dependencies
 import SockJS from 'sockjs-client'
 import Stomp from 'webstomp-client'
-import { onMounted, reactive, toRefs } from 'vue'
+
+// vue imports
+import { onMounted, reactive, toRefs, computed } from 'vue'
 import { useStore } from 'vuex'
+
+// components
 import GameBoard from './GameBoard'
 import GameConnect from './GameConnect'
 import GameHeader from './GameHeader'
@@ -74,7 +83,7 @@ export default {
 		function connectCallback(frame) {
 			state.connected = true
 			console.log(frame)
-			stompClient.subscribe('/queue/gameStatus', tick => {
+			stompClient.subscribe('/topic/gameStatus', tick => {
 				console.log(tick)
 				if (tick.body.slice(0, 6) === 'Player') {
 					console.log('YEP COCK ' + tick.body)
@@ -117,7 +126,7 @@ export default {
 					email: state.user.email
 				}
 				console.log(JSON.stringify(msg))
-				stompClient.send('/app/incomingMessage', JSON.stringify(msg), {})
+				stompClient.send('/app/playGame', JSON.stringify(msg), {})
 			}
 		}
 
@@ -152,6 +161,9 @@ export default {
 			window.eventBus.emit('reset-timer')
 		}
 
+		// getters
+		const getIsUserLoggedIn = computed(() => store.getters.getIsLoggedIn)
+
 		return {
 			...toRefs(state),
 			connect,
@@ -160,7 +172,8 @@ export default {
 			disconnect,
 			send,
 			connectToGame,
-			disconnectFromGame
+			disconnectFromGame,
+			getIsUserLoggedIn
 		}
 	}
 }

@@ -79,7 +79,7 @@ export default {
 		 * * Provide connectCallback and connectError
 		 */
 		function connect() {
-			const socket = new SockJS('http://192.168.100.25:42069/chatapp')
+			const socket = new SockJS('http://192.168.100.62:42069/chat')
 			stompClient = Stomp.over(socket)
 			stompClient.connect({}, connectCallback, connectErrot)
 		}
@@ -146,7 +146,8 @@ export default {
 				const msg = {
 					message: Base64.encode(message),
 					nickname: state.user.nickname,
-					email: state.user.email
+					email: state.user.email,
+					avatar: state.user.avatar
 				}
 				console.log(JSON.stringify(msg))
 				stompClient.send('/app/incomingMessage', JSON.stringify(msg), {})
