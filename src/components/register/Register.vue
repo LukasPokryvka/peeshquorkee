@@ -65,7 +65,7 @@ export default {
 			if (validateRegister()) {
 				registerUser.value.password = md5(registerUser.value.password)
 				axios
-					.post('http://192.168.100.25:4200/userRegister', {
+					.post('http://192.168.100.24:42069/userRegister', {
 						...registerUser.value
 					})
 					.then(res => {

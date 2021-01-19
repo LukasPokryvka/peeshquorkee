@@ -163,7 +163,7 @@ export default {
 			if (!state.connected) connect()
 
 			axios
-				.post('http://192.168.100.25:4202/chatHistory', {
+				.post('http://192.168.100.24:42069/chatHistory', {
 					timestamp: state.oldestTimestamp
 				})
 				.then(res => {

@@ -4,7 +4,7 @@
 		class="game"
 		:class="{ 'game-background': connectedToGame }"
 	>
-		<GameHeader :user="user" />
+		<GameHeader />
 		<GameConnect v-if="!connectedToGame" @connect-to-game="connectToGame" />
 		<GameBoard :gameBoard="gameBoard" @player-move="send($event)" />
 		<GameDisconnect
@@ -85,10 +85,35 @@ export default {
 			console.log(frame)
 			stompClient.subscribe('/topic/gameStatus', tick => {
 				console.log(tick)
-				if (tick.body.slice(0, 6) === 'Player') {
-					console.log('YEP COCK ' + tick.body)
-				} else if (tick.body === 'Game ended.') {
-					console.log('GAME ENDED')
+				if (tick.body.slice(0, 7) === 'Player2') {
+					window.eventBus.emit('start-timer')
+				} else if (tick.body === 'Game ended.' && state.connectedToGame) {
+					disconnectFromGame()
+					state.gameBoard = {
+						f00: '',
+						f01: '',
+						f02: '',
+						f03: '',
+						f04: '',
+						f05: '',
+						f06: '',
+						f07: '',
+						f09: ''
+					}
+				} else if (tick.body.slice(0, 7) === 'Player1') {
+					return
+				} else if (tick.body === 'Game ended.' && !state.connectedToGame) {
+					state.gameBoard = {
+						f00: '',
+						f01: '',
+						f02: '',
+						f03: '',
+						f04: '',
+						f05: '',
+						f06: '',
+						f07: '',
+						f09: ''
+					}
 				} else {
 					const gameBoard = JSON.parse(tick.body)
 					if (gameBoard.f00 === 'win_playerOne') disconnectFromGame()
@@ -142,7 +167,6 @@ export default {
 				console.log(JSON.stringify(msg))
 				stompClient.send('/app/startGame', JSON.stringify(msg), {})
 				state.connectedToGame = true
-				window.eventBus.emit('start-timer')
 			}
 		}
 

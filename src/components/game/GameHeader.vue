@@ -1,6 +1,6 @@
 <template>
 	<div class="game-header">
-		<h2>{{ user.nickname }}</h2>
+		<h2>{{ getUser.nickname }}</h2>
 		<h2>{{ formatMinutes }}:{{ formatSeconds }}</h2>
 		<h2>Score</h2>
 	</div>
@@ -8,14 +8,11 @@
 
 <script>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { useStore } from 'vuex'
 
 export default {
-	props: {
-		user: {
-			type: Object
-		}
-	},
 	setup() {
+		const store = useStore()
 		const timer = ref({
 			minutes: 0,
 			seconds: 0
@@ -32,6 +29,10 @@ export default {
 			})
 			window.eventBus.on('reset-timer', () => {
 				clearInterval(timerInterval)
+				timer.value = {
+					minutes: 0,
+					seconds: 0
+				}
 			})
 		})
 
@@ -64,12 +65,16 @@ export default {
 			}
 		})
 
+		// computed
+		const getUser = computed(() => store.getters.getUser)
+
 		return {
 			timer,
 			formatSeconds,
 			formatMinutes,
 			setTimer,
-			timerInterval
+			timerInterval,
+			getUser
 		}
 	}
 }
