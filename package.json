@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "axios": "^0.21.1",
-    "core-js": "^3.6.5",
+    "core-js": "^3.8.3",
     "js-base64": "^3.6.0",
     "md5": "^2.3.0",
     "mitt": "^2.1.0",
@@ -19,7 +19,7 @@
     "validator": "^13.5.2",
     "vue": "^3.0.0",
     "vuex": "^4.0.0-rc.2",
-    "vuex-persistedstate": "^4.0.0-beta.2",
+    "vuex-persistedstate": "^4.0.0-beta.3",
     "webstomp-client": "^1.2.6"
   },
   "devDependencies": {
@@ -30,8 +30,8 @@
     "babel-eslint": "^10.1.0",
     "eslint": "^6.7.2",
     "eslint-plugin-vue": "^7.0.0-0",
-    "sass": "^1.32.2",
-    "sass-loader": "^10.1.0"
+    "sass": "^1.32.5",
+    "sass-loader": "^10.1.1"
   },
   "eslintConfig": {
     "root": true,

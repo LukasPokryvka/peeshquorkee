@@ -6,6 +6,7 @@
 	>
 		<GameHeader />
 		<GameConnect v-if="!connectedToGame" @connect-to-game="connectToGame" />
+		<GameLoading v-if="lookingForGame" />
 		<GameBoard :gameBoard="gameBoard" @player-move="send($event)" />
 		<GameDisconnect
 			v-if="connectedToGame"
@@ -28,19 +29,22 @@ import GameBoard from './GameBoard'
 import GameConnect from './GameConnect'
 import GameHeader from './GameHeader'
 import GameDisconnect from './GameDisconnect'
+import GameLoading from './GameLoading'
 
 export default {
 	components: {
 		GameBoard,
 		GameConnect,
 		GameHeader,
-		GameDisconnect
+		GameDisconnect,
+		GameLoading
 	},
 	setup() {
 		const store = useStore()
 		const state = reactive({
 			connected: false,
 			connectedToGame: false,
+			lookingForGame: false,
 			user: store.getters.getUser,
 			gameBoard: {
 				f00: '',
@@ -84,43 +88,41 @@ export default {
 			state.connected = true
 			console.log(frame)
 			stompClient.subscribe('/topic/gameStatus', tick => {
-				console.log(tick)
-				if (tick.body.slice(0, 7) === 'Player2') {
+				const response = tick.body
+				console.log(response)
+
+				if (response.slice(0, 7) === 'Player1') {
+					console.log(
+						'yes------------------------------------------------------'
+					)
+				} else if (response.slice(0, 7) === 'Player2') {
 					window.eventBus.emit('start-timer')
-				} else if (tick.body === 'Game ended.' && state.connectedToGame) {
-					disconnectFromGame()
-					state.gameBoard = {
-						f00: '',
-						f01: '',
-						f02: '',
-						f03: '',
-						f04: '',
-						f05: '',
-						f06: '',
-						f07: '',
-						f09: ''
-					}
-				} else if (tick.body.slice(0, 7) === 'Player1') {
-					return
-				} else if (tick.body === 'Game ended.' && !state.connectedToGame) {
-					state.gameBoard = {
-						f00: '',
-						f01: '',
-						f02: '',
-						f03: '',
-						f04: '',
-						f05: '',
-						f06: '',
-						f07: '',
-						f09: ''
-					}
+					state.lookingForGame = false
+				} else if (response === 'Game ended.') {
+					state.connectedToGame ? disconnectFromGame() : resetBoard()
 				} else {
-					const gameBoard = JSON.parse(tick.body)
-					if (gameBoard.f00 === 'win_playerOne') disconnectFromGame()
-					else if (gameBoard.f00 === 'win_playerTwo') disconnectFromGame()
-					else state.gameBoard = gameBoard
+					const tmp = JSON.parse(response)
+					if (!tmp.winner) {
+						state.gameBoard = tmp.gameBoard
+					} else {
+						console.log('we have a winner: ', tmp.winnerNick)
+					}
 				}
 			})
+		}
+
+		function resetBoard() {
+			state.gameBoard = {
+				f00: '',
+				f01: '',
+				f02: '',
+				f03: '',
+				f04: '',
+				f05: '',
+				f06: '',
+				f07: '',
+				f09: ''
+			}
 		}
 
 		/**
@@ -139,6 +141,7 @@ export default {
 				stompClient.disconnect()
 			}
 			state.connected = false
+			resetBoard()
 		}
 
 		/**
@@ -167,6 +170,7 @@ export default {
 				console.log(JSON.stringify(msg))
 				stompClient.send('/app/startGame', JSON.stringify(msg), {})
 				state.connectedToGame = true
+				state.lookingForGame = true
 			}
 		}
 
@@ -183,6 +187,7 @@ export default {
 			}
 			state.connectedToGame = false
 			window.eventBus.emit('reset-timer')
+			resetBoard()
 		}
 
 		// getters
@@ -197,7 +202,8 @@ export default {
 			send,
 			connectToGame,
 			disconnectFromGame,
-			getIsUserLoggedIn
+			getIsUserLoggedIn,
+			resetBoard
 		}
 	}
 }

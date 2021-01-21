@@ -40,7 +40,6 @@ import updateScroll from '../../utilities/updateScroll'
 import SockJS from 'sockjs-client'
 import Stomp from 'webstomp-client'
 import axios from 'axios'
-import twitchEmoji from 'twitch-emoji'
 import { Base64 } from 'js-base64'
 
 // message sound
@@ -100,7 +99,7 @@ export default {
 				console.log(tick)
 
 				state.received_messages.push({
-					content: twitchEmoji.parse(Base64.decode(msg.content)),
+					content: Base64.decode(msg.content),
 					email: msg.email,
 					timestamp: formatTimestamp(msg.timestamp),
 					avatar: msg.avatar,
@@ -170,9 +169,7 @@ export default {
 					const data = res.data
 					data.forEach(msg => {
 						state.received_messages.unshift({
-							content: twitchEmoji.parse(Base64.decode(msg.message), {
-								emojiSize: 'small'
-							}),
+							content: Base64.decode(msg.message),
 							email: msg.email,
 							timestamp: formatTimestamp(msg.timestamp),
 							avatar: msg.avatar,
