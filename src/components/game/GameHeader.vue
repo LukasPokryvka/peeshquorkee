@@ -11,7 +11,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useStore } from 'vuex'
 
 export default {
-	setup() {
+	setup(_, { emit }) {
 		const store = useStore()
 		const timer = ref({
 			minutes: 0,
@@ -20,6 +20,7 @@ export default {
 
 		let timerInterval = null
 		onMounted(() => {
+			resetTimer()
 			window.eventBus.on('start-timer', () => {
 				timer.value = {
 					minutes: 0,
@@ -28,6 +29,7 @@ export default {
 				timerInterval = setInterval(setTimer, 1000)
 			})
 			window.eventBus.on('reset-timer', () => {
+				emit('timer-value', formatTimer())
 				clearInterval(timerInterval)
 				timer.value = {
 					minutes: 0,
@@ -37,8 +39,12 @@ export default {
 		})
 
 		onUnmounted(() => {
-			clearInterval(timerInterval)
+			resetTimer()
 		})
+
+		function formatTimer() {
+			return formatMinutes.value + ':' + formatSeconds.value
+		}
 
 		function setTimer() {
 			if (timer.value.seconds === 59) {
@@ -47,6 +53,10 @@ export default {
 			} else {
 				timer.value.seconds++
 			}
+		}
+
+		function resetTimer() {
+			clearInterval(timerInterval)
 		}
 
 		const formatSeconds = computed(() => {
@@ -74,7 +84,9 @@ export default {
 			formatMinutes,
 			setTimer,
 			timerInterval,
-			getUser
+			getUser,
+			resetTimer,
+			formatTimer
 		}
 	}
 }

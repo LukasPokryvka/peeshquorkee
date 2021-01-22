@@ -177,7 +177,9 @@ export default {
 							displayHeader: false,
 							firstMessage: false
 						})
+						console.log('------- - - - - - - - -- - - -> ', msg.avatar)
 					})
+
 					state.oldestTimestamp = state.received_messages[0].timestamp
 					formatHeaders()
 				})

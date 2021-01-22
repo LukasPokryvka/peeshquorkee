@@ -12,9 +12,11 @@ export default {
 		const send_message = ref('')
 
 		function sendMessage() {
-			emit('send-message', send_message.value)
-			console.log(send_message.value)
-			send_message.value = ''
+			if (send_message.value) {
+				emit('send-message', send_message.value)
+				console.log(send_message.value)
+				send_message.value = ''
+			}
 		}
 
 		return {

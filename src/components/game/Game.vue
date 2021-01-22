@@ -4,7 +4,7 @@
 		class="game"
 		:class="{ 'game-background': connectedToGame }"
 	>
-		<GameHeader />
+		<GameHeader @timer-value="setTimerValue($event)" />
 		<GameConnect v-if="!connectedToGame" @connect-to-game="connectToGame" />
 		<GameLoading v-if="lookingForGame" />
 		<GameBoard :gameBoard="gameBoard" @player-move="send($event)" />
@@ -12,6 +12,14 @@
 			v-if="connectedToGame"
 			@disconnect-from-game="disconnectFromGame"
 		/>
+		<div v-if="isWinner" @click="closeIsWinner" class="game-winner-overlay">
+			<div class="game-winner-modal">
+				<h2>{{ endGameTitle }}</h2>
+				<p>Winner: {{ winner }}</p>
+				<p>Game time: {{ gameTime }}</p>
+				<button @click="connectToGame()">Play another game</button>
+			</div>
+		</div>
 	</section>
 </template>
 
@@ -45,6 +53,10 @@ export default {
 			connected: false,
 			connectedToGame: false,
 			lookingForGame: false,
+			isWinner: false,
+			winner: '',
+			endGameTitle: '',
+			gameTime: '',
 			user: getUserInfo,
 			gameBoard: {
 				f00: '',
@@ -58,6 +70,10 @@ export default {
 				f09: ''
 			}
 		})
+
+		function setTimerValue(value) {
+			state.gameTime = value
+		}
 
 		let stompClient = null
 
@@ -101,14 +117,35 @@ export default {
 				} else if (response === 'Game ended.') {
 					state.connectedToGame ? disconnectFromGame() : resetBoard()
 				} else {
-					const tmp = JSON.parse(response)
-					if (!tmp.winner) {
-						state.gameBoard = tmp.gameBoard
-					} else {
-						console.log('we have a winner: ', tmp.winnerNick)
+					const win = JSON.parse(response)
+					state.gameBoard = win.gameBoard
+					if (win.winner) {
+						whoWon(win.winnerNick)
+						state.isWinner = true
+						state.winner = win.winnerNick
+						window.eventBus.emit('reset-timer')
+					} else if (win.draw) {
+						whoWon(win.winnerNick)
+						state.isWinner = true
+						state.winner = win.winnerNick
+						window.eventBus.emit('reset-timer')
 					}
 				}
 			})
+		}
+
+		function whoWon(player) {
+			if (player === 'draw') {
+				state.endGameTitle = "It's a draw!"
+			} else {
+				player === state.user.nickname
+					? (state.endGameTitle = 'You won!')
+					: (state.endGameTitle = 'You lost :(')
+			}
+		}
+
+		function closeIsWinner() {
+			state.isWinner = false
 		}
 
 		function resetBoard() {
@@ -164,6 +201,7 @@ export default {
 		 */
 		function connectToGame() {
 			if (stompClient && stompClient.connected) {
+				resetBoard()
 				const msg = {
 					nickname: state.user.nickname
 				}
@@ -190,7 +228,7 @@ export default {
 			resetBoard()
 		}
 
-		// getters
+		// COMPUTED
 		const getIsUserLoggedIn = computed(() => store.getters.getIsLoggedIn)
 		const getUserInfo = computed(() => store.getters.getUser)
 		watchEffect(() => {
@@ -207,7 +245,10 @@ export default {
 			connectToGame,
 			disconnectFromGame,
 			getIsUserLoggedIn,
-			resetBoard
+			resetBoard,
+			closeIsWinner,
+			setTimerValue,
+			whoWon
 		}
 	}
 }
@@ -225,5 +266,30 @@ export default {
 	width: 500px;
 	height: 550px;
 	border-radius: 15px;
+
+	.game-winner-overlay {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		border-radius: 15px;
+		z-index: 10;
+
+		.game-winner-modal {
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+			background-color: white;
+			padding: 1rem;
+			border-radius: 15px;
+
+			h2 {
+				margin: 0;
+				text-align: center;
+			}
+		}
+	}
 }
 </style>
