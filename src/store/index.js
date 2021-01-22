@@ -5,7 +5,8 @@ const store = createStore({
 	state() {
 		return {
 			user: {},
-			isLoggedIn: false
+			isLoggedIn: false,
+			avatars: []
 		}
 	},
 	mutations: {
@@ -16,6 +17,9 @@ const store = createStore({
 		},
 		SET_IS_LOGGED_IN(state, payload) {
 			state.isLoggedIn = payload
+		},
+		SET_AVATARS(state, payload) {
+			state.avatars = payload
 		}
 	},
 	actions: {
@@ -26,6 +30,9 @@ const store = createStore({
 		logout(context) {
 			context.commit('SET_USER', {})
 			context.commit('SET_IS_LOGGED_IN', false)
+		},
+		loadAvatars(context, payload) {
+			context.commit('SET_AVATARS', payload)
 		}
 	},
 	getters: {
@@ -34,6 +41,12 @@ const store = createStore({
 		},
 		getIsLoggedIn: state => {
 			return state.isLoggedIn
+		},
+		getAvatars: state => {
+			return state.avatars
+		},
+		getUserAvatar: state => index => {
+			return state.avatars[index]
 		}
 	},
 	plugins: [createPersistedState()]

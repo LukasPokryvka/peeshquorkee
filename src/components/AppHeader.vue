@@ -10,7 +10,7 @@
 		</div>
 		<div class="header-credentials" v-else>
 			<h2>
-				<img :src="`data:image/png;base64,${getUser.avatar}`" alt="avatar" />
+				<img :src="`data:image/png;base64,${getUserAvatar}`" alt="avatar" />
 				Welcome,
 				{{ getUser.nickname }}
 			</h2>
@@ -61,13 +61,17 @@ export default {
 		 */
 		const getIsUserLoggedIn = computed(() => store.getters.getIsLoggedIn)
 		const getUser = computed(() => store.getters.getUser)
+		const getUserAvatar = computed(() =>
+			store.getters.getUserAvatar(getUser.value.avatar)
+		)
 
 		return {
 			state,
 			handleLogin,
 			getIsUserLoggedIn,
 			logout,
-			getUser
+			getUser,
+			getUserAvatar
 		}
 	}
 }

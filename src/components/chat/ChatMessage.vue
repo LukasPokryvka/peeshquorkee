@@ -20,7 +20,7 @@
 		</div>
 		<div>
 			<img
-				:src="message.avatar"
+				:src="`data:image/png;base64,${getUserAvatar}`"
 				alt=""
 				v-if="message.displayHeader"
 				@mouseover="avatarHover = true"
@@ -33,9 +33,10 @@
 </template>
 
 <script>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { timeOfChat } from '../../utilities/timeUtilities'
 import ChatPopup from './ChatPopup'
+import { useStore } from 'vuex'
 
 export default {
 	components: { ChatPopup },
@@ -47,9 +48,15 @@ export default {
 			type: String
 		}
 	},
-	setup() {
+	setup(props) {
+		const store = useStore()
 		const avatarHover = ref(false)
-		return { timeOfChat, avatarHover }
+
+		const getUserAvatar = computed(() =>
+			store.getters.getUserAvatar(props.message.avatar)
+		)
+
+		return { timeOfChat, avatarHover, getUserAvatar }
 	}
 }
 </script>

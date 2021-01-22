@@ -8,7 +8,7 @@
 	<div class="avatar">
 		<p>Choose your avatar</p>
 		<img
-			:src="`data:image/png;base64,${selectedAvatar}`"
+			:src="`data:image/png;base64,${avatars[selectedAvatar]}`"
 			@click="showAvatars = true"
 			class="img-preview"
 		/>
@@ -16,11 +16,11 @@
 			<div v-if="showAvatars" class="avatar-gallery">
 				<h2>Choose your superpower</h2>
 				<div>
-					<div v-for="avatar in avatars" :key="avatar">
+					<div v-for="(avatar, index) in avatars" :key="avatar.slice(0, 30)">
 						<img
 							:src="`data:image/png;base64,${avatar}`"
 							alt="avatar"
-							@click="selectAvatar(avatar)"
+							@click="selectAvatar(index)"
 						/>
 					</div>
 				</div>
@@ -37,7 +37,7 @@ export default {
 			type: Array
 		},
 		selectedAvatar: {
-			type: String
+			type: Number
 		},
 		avatarVisible: {
 			type: Boolean
@@ -53,8 +53,8 @@ export default {
 			state.showAvatars = false
 		}
 
-		function selectAvatar(avatar) {
-			emit('select-avatar', avatar)
+		function selectAvatar(avatarIndex) {
+			emit('select-avatar', avatarIndex)
 			closeAvatar()
 		}
 
@@ -113,7 +113,7 @@ export default {
 		background-color: #845ec2;
 		color: white;
 		left: -35px;
-		top: -50px;
+		top: -135px;
 		width: 300px;
 
 		h2 {
@@ -127,6 +127,7 @@ export default {
 			justify-content: space-between;
 			div {
 				flex-basis: 32%;
+				margin-bottom: 7px;
 			}
 
 			img {

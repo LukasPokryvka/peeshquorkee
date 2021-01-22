@@ -36,17 +36,19 @@
 </template>
 
 <script>
-import { onBeforeMount, reactive, toRefs } from 'vue'
+import { computed, onBeforeMount, reactive, toRefs, watchEffect } from 'vue'
 import md5 from 'md5'
 import axios from 'axios'
 import validator from 'validator'
 import RegisterAvatar from './RegisterAvatar'
+import { useStore } from 'vuex'
 
 export default {
 	components: {
 		RegisterAvatar
 	},
 	setup(_, { emit }) {
+		const store = useStore()
 		const state = reactive({
 			registerUser: {
 				nickname: '',
@@ -59,22 +61,15 @@ export default {
 			avatarInvalid: false,
 			avatarSelected: '',
 			avatars: [],
-			selectedAvatar: ''
+			selectedAvatar: null
 		})
 
 		onBeforeMount(() => {
-			getAvatars()
+			state.selectedAvatar = 0
 		})
 
-		function selectAvatar(avatar) {
-			state.selectedAvatar = avatar
-		}
-
-		function getAvatars() {
-			axios.get('http://192.168.100.24:42069/avatarGallery').then(res => {
-				state.avatars = res.data.avatars
-				state.selectedAvatar = state.avatars[0]
-			})
+		function selectAvatar(avatarIndex) {
+			state.selectedAvatar = avatarIndex
 		}
 
 		/**
@@ -132,6 +127,12 @@ export default {
 			}
 		}
 
+		// COMPUTED
+		const getAvatars = computed(() => store.getters.getAvatars)
+		watchEffect(() => {
+			state.avatars = getAvatars
+		})
+
 		return {
 			...toRefs(state),
 			register,
@@ -149,7 +150,7 @@ export default {
 }
 
 .button-register {
-	margin-top: 1.5rem;
+	margin-top: 1.2rem;
 }
 
 .button-avatar {

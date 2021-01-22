@@ -15,9 +15,21 @@ import AppFooter from './components/AppFooter'
 import Chat from './components/chat/Chat'
 import Game from './components/game/Game'
 
+import axios from 'axios'
+import { useStore } from 'vuex'
+import { onMounted } from 'vue'
+
 export default {
 	name: 'App',
-	components: { AppHeader, AppFooter, Chat, Game }
+	components: { AppHeader, AppFooter, Chat, Game },
+	setup() {
+		const store = useStore()
+		onMounted(() => {
+			axios.get('http://192.168.100.24:42069/avatarGallery').then(res => {
+				store.dispatch('loadAvatars', res.data.avatars)
+			})
+		})
+	}
 }
 </script>
 
