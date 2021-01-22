@@ -10,16 +10,19 @@
 		</div>
 		<div class="header-credentials" v-else>
 			<h2>
-				<img :src="getUser.avatar" alt="avatar" /> Welcome,
+				<img :src="`data:image/png;base64,${getUser.avatar}`" alt="avatar" />
+				Welcome,
 				{{ getUser.nickname }}
 			</h2>
 			<button @click="logout()" class="header-logout">Logout</button>
 		</div>
 		<h1>Peeshquorkee</h1>
 	</header>
+
 	<Modal v-if="state.isLoginModal" @close-modal="state.isLoginModal = false">
 		<Login @close-login-modal="handleLogin" />
 	</Modal>
+
 	<Modal
 		v-if="state.isRegisterModal"
 		@close-modal="state.isRegisterModal = false"
@@ -46,6 +49,7 @@ export default {
 
 		function handleLogin() {
 			state.isLoginModal = false
+			console.log(getUser.value.avatar)
 		}
 
 		function logout() {
@@ -58,7 +62,13 @@ export default {
 		const getIsUserLoggedIn = computed(() => store.getters.getIsLoggedIn)
 		const getUser = computed(() => store.getters.getUser)
 
-		return { state, handleLogin, getIsUserLoggedIn, logout, getUser }
+		return {
+			state,
+			handleLogin,
+			getIsUserLoggedIn,
+			logout,
+			getUser
+		}
 	}
 }
 </script>
@@ -140,7 +150,7 @@ header {
 }
 
 .modal-properties {
-	padding: 2rem;
+	padding: 1.2rem 2rem;
 
 	.register-form {
 		input {
@@ -151,7 +161,7 @@ header {
 	button {
 		border: none;
 		padding: 0.7rem 1rem;
-		margin: 2rem auto 0 auto;
+		margin: 0.7rem auto 0 auto;
 		display: block;
 		border-radius: 15px;
 		color: white;

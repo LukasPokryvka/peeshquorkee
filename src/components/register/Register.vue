@@ -1,11 +1,11 @@
 <template>
-	<section class="modal-properties">
+	<section class="modal-properties" @keydown.esc="closeAvatar()">
 		<h2>Register</h2>
 		<form @submit.prevent="register()" class="register-form">
 			<div>
 				<input
 					v-model.trim="registerUser.nickname"
-					:class="{ invalid: registerUser.nickInvalid }"
+					:class="{ invalid: nickInvalid }"
 					type="text"
 					placeholder="Nickname"
 				/>
@@ -13,49 +13,69 @@
 			<div>
 				<input
 					v-model.trim="registerUser.email"
-					:class="{ invalid: registerUser.emailInvalid }"
+					:class="{ invalid: emailInvalid }"
 					type="email"
 				/>
 			</div>
 			<div>
 				<input
 					v-model.trim="registerUser.password"
-					:class="{ invalid: registerUser.passwordInvalid }"
+					:class="{ invalid: passwordInvalid }"
 					type="password"
 					placeholder="Password"
 				/>
 			</div>
-			<div>
-				<input
-					v-model.trim="registerUser.avatar"
-					:class="{ invalid: registerUser.avatarInvalid }"
-					type="text"
-					placeholder="Avatar link"
-				/>
-			</div>
-			<button class="button-register">Register</button>
+			<RegisterAvatar
+				:avatars="avatars"
+				:selectedAvatar="selectedAvatar"
+				@select-avatar="selectAvatar($event)"
+			/>
+			<button class="button-register" type="submit">Register</button>
 		</form>
 	</section>
 </template>
 
 <script>
-import { ref } from 'vue'
+import { onBeforeMount, reactive, toRefs } from 'vue'
 import md5 from 'md5'
 import axios from 'axios'
 import validator from 'validator'
+import RegisterAvatar from './RegisterAvatar'
 
 export default {
+	components: {
+		RegisterAvatar
+	},
 	setup(_, { emit }) {
-		const registerUser = ref({
-			nickname: '',
-			email: '@',
-			password: '',
-			avatar: '',
+		const state = reactive({
+			registerUser: {
+				nickname: '',
+				email: '@',
+				password: ''
+			},
 			nickInvalid: false,
 			emailInvalid: false,
 			passwordInvalid: false,
-			avatarInvalid: false
+			avatarInvalid: false,
+			avatarSelected: '',
+			avatars: [],
+			selectedAvatar: ''
 		})
+
+		onBeforeMount(() => {
+			getAvatars()
+		})
+
+		function selectAvatar(avatar) {
+			state.selectedAvatar = avatar
+		}
+
+		function getAvatars() {
+			axios.get('http://192.168.100.24:42069/avatarGallery').then(res => {
+				state.avatars = res.data.avatars
+				state.selectedAvatar = state.avatars[0]
+			})
+		}
 
 		/**
 		 * * Register user
@@ -63,10 +83,11 @@ export default {
 		 */
 		const register = () => {
 			if (validateRegister()) {
-				registerUser.value.password = md5(registerUser.value.password)
+				state.registerUser.password = md5(state.registerUser.password)
 				axios
 					.post('http://192.168.100.24:42069/userRegister', {
-						...registerUser.value
+						...state.registerUser,
+						avatar: state.selectedAvatar
 					})
 					.then(res => {
 						emit('close-register-modal')
@@ -80,47 +101,44 @@ export default {
 		 * ! Simplify code
 		 */
 		function validateRegister() {
-			registerUser.value.nickInvalid = false
-			registerUser.value.emailInvalid = false
-			registerUser.value.passwordInvalid = false
-			registerUser.value.avatarInvalid = false
+			state.registerUser.nickInvalid = false
+			state.registerUser.emailInvalid = false
+			state.registerUser.passwordInvalid = false
 
 			if (
-				validator.isLength(registerUser.value.nickname, { min: 3, max: 12 }) &&
-				validator.isAlphanumeric(registerUser.value.nickname)
+				validator.isLength(state.registerUser.nickname, { min: 3, max: 12 }) &&
+				validator.isAlphanumeric(state.registerUser.nickname)
 			) {
-				if (validator.isEmail(registerUser.value.email)) {
+				if (validator.isEmail(state.registerUser.email)) {
 					if (
-						validator.isLength(registerUser.value.password, {
+						validator.isLength(state.registerUser.password, {
 							min: 5,
 							max: 12
 						}) &&
-						validator.isAlphanumeric(registerUser.value.password)
+						validator.isAlphanumeric(state.registerUser.password)
 					) {
-						if (
-							registerUser.value.avatar.length === 0 ||
-							validator.isURL(registerUser.value.avatar)
-						) {
-							return true
-						} else {
-							registerUser.value.avatarInvalid = true
-							return false
-						}
+						return true
 					} else {
-						registerUser.value.passwordInvalid = true
+						state.passwordInvalid = true
 						return false
 					}
 				} else {
-					registerUser.value.emailInvalid = true
+					state.emailInvalid = true
 					return false
 				}
 			} else {
-				registerUser.value.nickInvalid = true
+				state.nickInvalid = true
 				return false
 			}
 		}
 
-		return { registerUser, register, validateRegister }
+		return {
+			...toRefs(state),
+			register,
+			validateRegister,
+			getAvatars,
+			selectAvatar
+		}
 	}
 }
 </script>
@@ -128,5 +146,16 @@ export default {
 <style lang="scss" scoped>
 .invalid {
 	border: 2px solid red;
+}
+
+.button-register {
+	margin-top: 1.5rem;
+}
+
+.button-avatar {
+	background-color: #d65db1;
+}
+.button-avatar:hover {
+	background-color: #fc6dd0;
 }
 </style>

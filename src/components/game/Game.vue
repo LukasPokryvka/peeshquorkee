@@ -21,7 +21,7 @@ import SockJS from 'sockjs-client'
 import Stomp from 'webstomp-client'
 
 // vue imports
-import { onMounted, reactive, toRefs, computed } from 'vue'
+import { onMounted, reactive, toRefs, computed, watchEffect } from 'vue'
 import { useStore } from 'vuex'
 
 // components
@@ -45,7 +45,7 @@ export default {
 			connected: false,
 			connectedToGame: false,
 			lookingForGame: false,
-			user: store.getters.getUser,
+			user: getUserInfo,
 			gameBoard: {
 				f00: '',
 				f01: '',
@@ -151,7 +151,7 @@ export default {
 			if (stompClient && stompClient.connected) {
 				const msg = {
 					move: value.slice(1, 3),
-					email: state.user.email
+					nickname: state.user.nickname
 				}
 				console.log(JSON.stringify(msg))
 				stompClient.send('/app/playGame', JSON.stringify(msg), {})
@@ -165,7 +165,7 @@ export default {
 		function connectToGame() {
 			if (stompClient && stompClient.connected) {
 				const msg = {
-					email: state.user.email
+					nickname: state.user.nickname
 				}
 				console.log(JSON.stringify(msg))
 				stompClient.send('/app/startGame', JSON.stringify(msg), {})
@@ -192,6 +192,10 @@ export default {
 
 		// getters
 		const getIsUserLoggedIn = computed(() => store.getters.getIsLoggedIn)
+		const getUserInfo = computed(() => store.getters.getUser)
+		watchEffect(() => {
+			state.user = getUserInfo
+		})
 
 		return {
 			...toRefs(state),
